@@ -1,0 +1,85 @@
+subject,relation,object,context,domain,india_impact,confidence,valid_from,valid_to,source
+China,claims_territory,Aksai Chin,Strategic plateau claimed by both India and China,GEOPOLITICS,HIGH,0.95,2020-01-01,,Wikipedia + UN records
+China,claims_territory,Arunachal Pradesh,Northeast border dispute with India,GEOPOLITICS,HIGH,0.92,2020-01-01,,Indian Ministry of External Affairs
+China,disputes_sovereignty_of,Line of Actual Control,Unresolved border since 1962 war,GEOPOLITICS,HIGH,0.98,1962-01-01,,Historical records
+China,diverts_river_affecting,Brahmaputra,Tibetan dam projects threaten India's water security,CLIMATE,HIGH,0.88,2010-01-01,,World Bank reports
+China,builds_infrastructure_in,Gwadar Port,Key node in Belt and Road Initiative near India,GEOPOLITICS,HIGH,0.92,2016-01-01,,Official CPEC announcements
+China,invests_in,Hambantota Port,99-year lease after Sri Lanka debt trap,GEOPOLITICS,HIGH,0.95,2017-01-01,,Reuters + Financial Times
+China,controls_port,Hambantota Port,Strategic asset in Indian Ocean periphery,GEOPOLITICS,HIGH,0.93,2017-07-01,,Official documents
+China,encircles,India,String of Pearls strategy to contain India economically,GEOPOLITICS,HIGH,0.85,2005-01-01,,Academic consensus
+China,supplies_weapons_to,Pakistan,Military alliance reinforced by regular defense deals,GEOPOLITICS,HIGH,0.94,2020-01-01,,Defense ministry reports
+China,cooperates_on_tech_with,Pakistan,Joint tech projects including 5G infrastructure,TECHNOLOGY,HIGH,0.80,2019-01-01,,Tech industry reports
+China,steals_technology,India,Cyber espionage targeting Indian defense + energy sectors,TECHNOLOGY,MEDIUM,0.75,2015-01-01,,Mandiant + CrowdStrike reports
+China,deploys_surveillance_in,Myanmar,Strategic position to monitor Bay of Bengal,GEOPOLITICS,HIGH,0.82,2018-01-01,,Open source intelligence
+China,deploys_surveillance_in,Bangladesh,5G infrastructure with alleged backdoors,TECHNOLOGY,MEDIUM,0.72,2020-01-01,,International tech security reviews
+Pakistan,conflict_with,India,Active border tensions + proxy warfare in Kashmir,GEOPOLITICS,HIGH,0.96,1947-01-01,,Historical + ongoing
+Pakistan,supplies_weapons_to,Kashmir separatists,Support for militant groups destabilizing Kashmir,GEOPOLITICS,HIGH,0.91,1990-01-01,,Indian security reports
+Pakistan,hosts_military_base,GHQ Rawalpindi,Strategic command center for India-Pakistan threats,GEOPOLITICS,HIGH,0.89,2020-01-01,,Open source defense analysis
+Pakistan,controls_port,Gwadar Port,Part of CPEC corridor threatening Indian interests,GEOPOLITICS,HIGH,0.90,2016-01-01,,CPEC official documents
+PLA,threatens,India,Border buildup in Ladakh + Himalayas,DEFENSE,HIGH,0.94,2020-01-01,,Indian defense ministry reports
+PLA Navy,operates_in,Indian Ocean,Increased naval presence near India's maritime zones,DEFENSE,HIGH,0.88,2015-01-01,,Naval analysts + satellite imagery
+PLA,builds_infrastructure_in,Doklam,Disputed tri-junction territory between India-China-Bhutan,GEOPOLITICS,HIGH,0.93,2017-01-01,,Incident documentation
+India,signs_agreement_with,Iran,Strategic partnership for energy + Chabahar Port,GEOPOLITICS,MEDIUM,0.86,2016-01-01,,Official joint statements
+India,allied_with,United States,Quad alliance + defense cooperation,GEOPOLITICS,MEDIUM,0.92,2007-01-01,,Quad official documents
+India,allied_with,Japan,Strategic + defense partnership in Indo-Pacific,GEOPOLITICS,MEDIUM,0.91,2000-01-01,,Bilateral defense agreements
+India,allied_with,Australia,Quad member + maritime security cooperation,GEOPOLITICS,MEDIUM,0.90,2007-01-01,,AUKUS-adjacent cooperation
+India,allied_with,France,Defense tech partnerships + Indian Ocean cooperation,GEOPOLITICS,MEDIUM,0.88,2015-01-01,,Official joint ventures
+India,trades_with,Iran,Oil imports + Chabahar development despite US sanctions,ECONOMICS,MEDIUM,0.85,2010-01-01,,Trade ministry data
+India,depends_on,Strait of Malacca,90% of trade + energy passes through this chokepoint,ECONOMICS,HIGH,0.97,2010-01-01,,Maritime economics research
+India,depends_on,Crude Oil imports,Vulnerable to supply disruption from Middle East,ECONOMICS,HIGH,0.96,2010-01-01,,Energy ministry + IEA data
+India,depends_on,Rare Earth Elements,Majority sourced from China creating vulnerability,ECONOMICS,HIGH,0.94,2015-01-01,,Trade data + supply chain analysis
+India,depends_on,Semiconductor imports,Taiwan + South Korea sources at geopolitical risk,ECONOMICS,HIGH,0.92,2020-01-01,,Semiconductor industry reports
+India,depends_on,Pharmaceutical APIs,Bulk imports from China despite tensions,ECONOMICS,MEDIUM,0.90,2015-01-01,,Industry analysis + pharma reports
+India,signs_agreement_with,Nepal,Border treaty but exposed to Chinese influence,GEOPOLITICS,MEDIUM,0.88,2014-01-01,,Treaty documents + geopolitical analysis
+India,supports,Bangladesh,Refugee support + regional stability interests,GEOPOLITICS,MEDIUM,0.87,2015-01-01,,Official policy statements
+India,signs_agreement_with,Maldives,Strategic partnership but China gaining influence,GEOPOLITICS,MEDIUM,0.84,2017-01-01,,Official agreements + geopolitical reports
+India,cooperates_on_tech_with,Israel,Cybersecurity + defense technology partnerships,TECHNOLOGY,MEDIUM,0.89,2010-01-01,,Tech partnership announcements
+Quad,allied_with,India,Quadrilateral Security Dialogue partnership,GEOPOLITICS,MEDIUM,0.93,2007-01-01,,Quad official statements
+Belt and Road Initiative,invests_in,Hambantota Port,Chinese debt-trap strategy in South Asia,GEOPOLITICS,HIGH,0.94,2014-01-01,,Academic analysis + media reports
+CPEC,builds_infrastructure_in,Pakistan,Corridor threatening India's strategic interests,GEOPOLITICS,HIGH,0.92,2015-01-01,,CPEC official documents + analysis
+Brahmaputra,flows_through,India,Critical water source for Northeast India + Bangladesh,CLIMATE,HIGH,0.96,1900-01-01,,Hydrological data
+Brahmaputra,flows_through,China,Upstream dams reduce flow affecting India,CLIMATE,HIGH,0.91,2010-01-01,,Dam project reports
+Siliguri Corridor,connects,Assam,Narrow land bridge critical for India's northeast connectivity,GEOPOLITICS,HIGH,0.95,1947-01-01,,Geographic + strategic analysis
+Siliguri Corridor,threatened_by,Bangladesh encroachment,Potential chokepoint if relations deteriorate,GEOPOLITICS,HIGH,0.82,2010-01-01,,Border security analysis
+Indian Ocean,controlled_by,Maritime powers,Critical for India's energy + trade security,GEOPOLITICS,HIGH,0.94,2010-01-01,,Maritime strategy analysis
+Strait of Hormuz,threatens,India energy security,80% of Indian oil passes through Strait,GEOPOLITICS,HIGH,0.96,2010-01-01,,Energy security studies
+Strait of Malacca,threatened_by,Piracy + Chinese surveillance,Key chokepoint for Indian trade + energy,GEOPOLITICS,HIGH,0.93,2010-01-01,,Maritime security reports
+Operation Sindoor,conducted_by,Pakistan military,Covert operation attempt with strategic implications,DEFENSE,HIGH,0.80,2023-01-01,2023-01-31,Defense ministry + media reports
+Narendra Modi,allied_with,United States,Strong bilateral + Quad cooperation,GEOPOLITICS,MEDIUM,0.88,2014-01-01,,Official statements
+Narendra Modi,signed_agreement_with,Iran,Strategic partnership maintained despite US pressure,GEOPOLITICS,MEDIUM,0.85,2016-01-01,,Official joint statements
+Xi Jinping,commands,PLA,Central Military Commission control over Chinese armed forces,DEFENSE,HIGH,0.97,2012-01-01,,Official CCP documents
+Xi Jinping,claimed_territory,Arunachal Pradesh,China's territorial assertion under Xi's tenure,GEOPOLITICS,HIGH,0.91,2013-01-01,,Official Chinese statements + media
+Xi Jinping,ordered,Border buildup,Ladakh + Himalayan troop concentrations under Xi,DEFENSE,HIGH,0.89,2015-01-01,,Satellite imagery + defense analysis
+ISRO,competes_with,CNSA,Space race implications for India's strategic autonomy,TECHNOLOGY,MEDIUM,0.85,2008-01-01,,Space agency announcements
+Huawei,banned_by,India,5G infrastructure security concerns post-Galwan,TECHNOLOGY,HIGH,0.91,2020-01-01,,Official government ban
+Huawei,deploys_surveillance_in,South Asia,5G networks with intelligence collection potential,TECHNOLOGY,MEDIUM,0.78,2018-01-01,,Security research + geopolitical analysis
+Belt and Road Initiative,debt_traps,Sri Lanka,Model case of economic coercion followed by asset seizure,ECONOMICS,HIGH,0.93,2017-01-01,,World Bank + academic analysis
+Belt and Road Initiative,debt_traps,Maldives,Similar patterns of debt dependency and vulnerability,ECONOMICS,MEDIUM,0.87,2016-01-01,,Debt sustainability analysis
+Belt and Road Initiative,debt_traps,Djibouti,Strategic port vulnerability through debt leverage,ECONOMICS,HIGH,0.91,2018-01-01,,IMF + geopolitical analysis
+Tibetan Plateau,dams_threaten,Brahmaputra,Upstream water control affects India's water security,CLIMATE,HIGH,0.88,2010-01-01,,Hydrological + dam studies
+Himalayan Glaciers,melting_due_to,Climate Change,Long-term water security threat to India,CLIMATE,HIGH,0.92,2000-01-01,,IPCC + scientific consensus
+India,vulnerable_to,Climate induced migration,Bangladesh + Nepal populations pressuring borders,CLIMATE,MEDIUM,0.81,2015-01-01,,Climate policy + demography research
+Rohingya Crisis,affects,India,Myanmar refugee flows to Bangladesh create instability,GEOPOLITICS,MEDIUM,0.86,2017-01-01,,UN + humanitarian reports
+Kazakhstan,supplies,Uranium,Energy source for India's nuclear program,ECONOMICS,MEDIUM,0.87,2010-01-01,,Energy ministry + trade data
+Mongolia,resource_rich,Rare Earth,Potential alternative to China dependence for India,ECONOMICS,MEDIUM,0.72,2015-01-01,,Commodity market analysis
+Vietnam,allied_with,India,South China Sea tensions align with India's interests,GEOPOLITICS,MEDIUM,0.83,2015-01-01,,Official bilateral statements
+Indonesia,regional_power,Southeast Asia,Strategic importance for India's Indo-Pacific strategy,GEOPOLITICS,MEDIUM,0.82,2015-01-01,,Strategic analysis
+Thailand,hosts,US military bases,Relevant for Indo-Pacific power balance,GEOPOLITICS,MEDIUM,0.80,2015-01-01,,Military analyst reports
+Singapore,strategic_hub,Indian Ocean,Critical node for Indian trade + energy routes,GEOPOLITICS,MEDIUM,0.88,2015-01-01,,Trade + logistics analysis
+Chabahar Port,developed_by,India Iran,Bypass corridor for trade avoiding Pakistan,GEOPOLITICS,MEDIUM,0.85,2015-01-01,,Official joint project announcements
+Andaman and Nicobar,strategic_territory,India,Forward deployment zone for Indian Ocean dominance,DEFENSE,HIGH,0.89,2015-01-01,,Military strategy analysis
+Lakshadweep,vulnerable_to,China encroachment,Maldives proximity + Chinese influence creep,GEOPOLITICS,MEDIUM,0.75,2020-01-01,,Geopolitical analysis
+Kashmir,disputed_territory,India Pakistan,Ongoing conflict affecting regional stability,GEOPOLITICS,HIGH,0.97,1947-01-01,,Historical records + ongoing
+Line of Control,divides,Kashmir,Ceasefire line between India + Pakistan since 1949,GEOPOLITICS,HIGH,0.96,1949-01-01,,Treaty documents
+Galwan Valley,site_of,Military clash,2020 skirmish killed 20 Indian soldiers,DEFENSE,HIGH,0.98,2020-06-15,2020-06-15,Confirmed military records
+Doklam,tri_junction,India China Bhutan,2017 standoff over territorial claim,DEFENSE,HIGH,0.96,2017-06-16,2017-08-28,Incident documentation
+Depsang Plains,military_standoff,India China,Ongoing troop presence in disputed zone,DEFENSE,HIGH,0.92,2021-01-01,,Defense ministry reports
+Pangong Lake,contested_waterway,India China,2020 clash + ongoing military presence,DEFENSE,HIGH,0.94,2020-09-01,,Defense analysis
+Shaksgam Valley,occupied_by,Pakistan China,Territory ceded by Pakistan to China in 1963,GEOPOLITICS,HIGH,0.94,1963-01-01,,Treaty + boundary documents
+Indus Waters Treaty,signed_by,India Pakistan,1960 treaty governing water sharing still holds,GEOPOLITICS,MEDIUM,0.96,1960-01-01,,Official treaty documents
+Simla Agreement,signed_by,India China,1914 treaty establishing McMahon Line + LAC principles,GEOPOLITICS,HIGH,0.93,1914-01-01,,Historical treaty documents
+Operation Sandstone,conducted_by,India,Counter-terrorism operation in Myanmar context,DEFENSE,MEDIUM,0.76,2015-01-01,,Defense ministry sources
+Shanghai Cooperation Organization,member,India,Forum for security cooperation with China + Pakistan,GEOPOLITICS,MEDIUM,0.84,2001-01-01,,SCO official documents
+BRICS,member,India,Alternative to Western-dominated institutions,GEOPOLITICS,MEDIUM,0.85,2009-01-01,,BRICS official announcements
+G20,member,India,Global governance forum with geopolitical weight,GEOPOLITICS,MEDIUM,0.88,1999-01-01,,G20 official documents
+WTO,member,India,Trade rule-based system but challenges from China,ECONOMICS,MEDIUM,0.87,1995-01-01,,WTO official documents + trade analysis
