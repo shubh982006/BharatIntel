@@ -27,6 +27,7 @@ Endpoints:
 import os
 import time
 import logging
+import json
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -84,9 +85,10 @@ def set_cached(key, data, ttl=60):
 # FASTAPI APP SETUP
 # ─────────────────────────────────────────────
 app = FastAPI(
-    title       = "BharatGraph API",
-    description = "AI-powered strategic intelligence graph for India (KB-Enhanced)",
-    version     = "2.1.0",
+    title             = "BharatGraph API",
+    description       = "AI-powered strategic intelligence graph for India (KB-Enhanced)",
+    version           = "2.1.0",
+    redirect_slashes  = False,   # prevents POST /query → 307 → GET /query/ → 405
 )
 
 # ─────────────────────────────────────────────
@@ -236,7 +238,7 @@ def graph_stats():
                 "low":  row["low"]  if row["low"]  else 0,
             }
 
-        driver.close()
+        
         set_cached("stats", stats, ttl=60)
         log.info("Stats fetched")
         return stats
@@ -282,7 +284,7 @@ def search_graph(
             """, q=q, limit=limit)
             results["edges"] = [dict(row) for row in r]
 
-        driver.close()
+       
         results["total"] = len(results["nodes"]) + len(results["edges"])
         log.info(f"Search '{q}' -> {results['total']} results")
         return results
@@ -372,125 +374,108 @@ def timeline(
 
 
 # ─────────────────────────────────────────────
+# All known KB entities (used for fuzzy matching)
+# ─────────────────────────────────────────────
+_KB_ENTITIES = [
+    "Aksai Chin", "Andaman and Nicobar", "Arunachal Pradesh", "Assam",
+    "Australia", "BRICS", "Bangladesh", "Belt and Road Initiative",
+    "Brahmaputra", "CNSA", "CPEC", "Chabahar Port", "China",
+    "Climate Change", "Crude Oil imports", "Depsang Plains", "Djibouti",
+    "Doklam", "France", "G20", "Galwan Valley", "Gwadar Port",
+    "Hambantota Port", "Himalayan Glaciers", "Huawei", "ISRO", "India",
+    "Indian Ocean", "Indonesia", "Indus Waters Treaty", "Iran", "Israel",
+    "Japan", "Kashmir", "Kazakhstan", "Lakshadweep", "Line of Actual Control",
+    "Line of Control", "Maldives", "Mongolia", "Myanmar", "Narendra Modi",
+    "Nepal", "Operation Sandstone", "Operation Sindoor", "PLA", "PLA Navy",
+    "Pakistan", "Pangong Lake", "Pharmaceutical APIs", "Quad",
+    "Rare Earth Elements", "Rohingya Crisis", "Semiconductor imports",
+    "Shaksgam Valley", "Shanghai Cooperation Organization", "Siliguri Corridor",
+    "Simla Agreement", "Singapore", "Sri Lanka", "Strait of Hormuz",
+    "Strait of Malacca", "Thailand", "Tibetan Plateau", "United States",
+    "Uranium", "Vietnam", "WTO", "Xi Jinping",
+    # aliases
+    "US", "Modi", "Trump", "Putin", "LAC", "LOC", "BRI", "ASEAN",
+    "South China Sea", "SCO",
+]
+
+# ─────────────────────────────────────────────
 # POST /query
-# ENHANCED: Searches KB first, then live news
 # ─────────────────────────────────────────────
 @app.post("/query")
 def natural_language_query(req: QueryRequest):
     """
-    Enhanced NL query endpoint that searches both KB and Live News layers.
-    
-    Returns answer with separate evidence from KB and live news.
-    
-    Request:
-        {"question": "India and China border"}
-    
-    Response:
-        {
-            "question": "India and China border",
-            "answer": "Comprehensive answer...",
-            "kb_edges": [...],           # Historical facts from KB
-            "live_edges": [...],         # Recent news
-            "total_evidence": 54,
-            "evidence_summary": "50 historical + 4 recent",
-            "entities_matched": [...],
-            "evidence": [...],           # For backward compatibility
-            "sources_used": 54           # For backward compatibility
-        }
+    Query endpoint: searches KB + live graph, then calls LLM with structured prompt.
+    Returns a rich structured response for the frontend to render.
     """
     if not GROQ_API_KEY:
         raise HTTPException(status_code=500, detail="GROQ_API_KEY not set")
     if not req.question.strip():
         raise HTTPException(status_code=400, detail="Question cannot be empty")
 
-    log.info(f"Enhanced NL Query: {req.question[:60]}")
+    log.info(f"Query: {req.question[:80]}")
 
     try:
         driver = get_driver()
-        kb_edges = []
-        live_edges = []
+        kb_edges: list = []
+        live_edges: list = []
 
-        # Extract entity mentions from question
+        # ── 1. Entity extraction: match against full KB entity list ──────────
         question_lower = req.question.lower()
-        
-        # Common India-related entities to check
-        entities_to_check = [
-            "India", "China", "Pakistan", "US", "United States",
-            "Iran", "Japan", "Russia", "Bangladesh", "Nepal",
-            "Sri Lanka", "Maldives", "Myanmar", "Vietnam",
-            "Modi", "Xi", "Trump", "Putin",
-            "LAC", "Kashmir", "Doklam", "Gwadar", "Hambantota",
-            "Chabahar", "CPEC", "BRI", "Quad", "ASEAN",
-            "Indian Ocean", "Strait of Malacca", "South China Sea"
+        entities_in_q = [
+            e for e in _KB_ENTITIES
+            if e.lower() in question_lower
         ]
+        # Also try splitting question words against entity tokens for partial matches
+        if not entities_in_q:
+            q_words = set(w.strip("'\".?,!") for w in question_lower.split() if len(w) > 3)
+            entities_in_q = [
+                e for e in _KB_ENTITIES
+                if any(w in e.lower() for w in q_words)
+            ]
 
-        entities_in_q = [e for e in entities_to_check if e.lower() in question_lower]
+        log.info(f"  Entities matched: {entities_in_q}")
 
         with driver.session() as session:
-
-            # ────────────────────────────────────────────────────
-            # SEARCH 1: Knowledge Base (verified historical facts)
-            # ────────────────────────────────────────────────────
             if entities_in_q:
-                kb_query = """
+                # KB: verified historical facts
+                r = session.run("""
                     MATCH (a:Entity)-[r:RELATION {from_kb: true}]->(b:Entity)
                     WHERE (a.name IN $entities OR b.name IN $entities)
-                    RETURN a.name AS subject,
-                           r.type AS relation,
-                           b.name AS object,
-                           r.context AS context,
-                           r.domain AS domain,
-                           r.india_impact AS india_impact,
-                           r.confidence AS confidence,
-                           r.valid_from AS date,
-                           r.source AS source,
-                           'KB' AS edge_source
-                    LIMIT 30
-                """
-                result = session.run(kb_query, entities=entities_in_q)
-                kb_edges = [dict(row) for row in result]
-                log.info(f"  KB edges found: {len(kb_edges)}")
+                    RETURN a.name AS subject, r.type AS relation, b.name AS object,
+                           r.context AS context, r.domain AS domain,
+                           r.india_impact AS india_impact, r.confidence AS confidence,
+                           r.valid_from AS date, r.source AS source, 'KB' AS edge_source
+                    LIMIT 40
+                """, entities=entities_in_q)
+                kb_edges = [dict(row) for row in r]
+                log.info(f"  KB edges: {len(kb_edges)}")
 
-            # ────────────────────────────────────────────────────
-            # SEARCH 2: Live News (recent developments)
-            # ────────────────────────────────────────────────────
-            if entities_in_q:
-                live_query = """
+                # Live news: recent ingested articles
+                r2 = session.run("""
                     MATCH (a:Entity)-[r:RELATION]->(b:Entity)
                     WHERE (a.name IN $entities OR b.name IN $entities)
                       AND r.from_kb IS NULL
                       AND r.india_impact IN ['HIGH', 'MEDIUM']
-                    RETURN a.name AS subject,
-                           r.type AS relation,
-                           b.name AS object,
-                           r.context AS context,
-                           r.domain AS domain,
-                           r.india_impact AS india_impact,
-                           r.confidence AS confidence,
-                           r.valid_from AS date,
-                           r.source AS source,
+                    RETURN a.name AS subject, r.type AS relation, b.name AS object,
+                           r.context AS context, r.domain AS domain,
+                           r.india_impact AS india_impact, r.confidence AS confidence,
+                           r.valid_from AS date, r.source AS source,
                            'LIVE_NEWS' AS edge_source
                     ORDER BY r.valid_from DESC
-                    LIMIT 15
-                """
-                result = session.run(live_query, entities=entities_in_q)
-                live_edges = [dict(row) for row in result]
-                log.info(f"  Live news edges found: {len(live_edges)}")
+                    LIMIT 20
+                """, entities=entities_in_q)
+                live_edges = [dict(row) for row in r2]
+                log.info(f"  Live edges: {len(live_edges)}")
 
-        driver.close()
-
-        # ────────────────────────────────────────────────────
-        # Combine edges: KB first (context), then live (recent)
-        # ────────────────────────────────────────────────────
         all_edges = kb_edges + live_edges
 
-        # ── Fallback: keyword search if entity lookup found nothing ──
+        # ── 2. Keyword fallback if entity match found nothing ─────────────────
         if not all_edges:
-            with driver.session() as session2:
-                words = [w for w in req.question.lower().split() if len(w) > 3]
-                fallback_edges = []
-                for word in words[:4]:
-                    r = session2.run("""
+            with driver.session() as s2:
+                words = [w for w in question_lower.split() if len(w) > 3]
+                seen_keys: set = set()
+                for word in words[:5]:
+                    r = s2.run("""
                         MATCH (a:Entity)-[rel:RELATION]->(b:Entity)
                         WHERE toLower(a.name) CONTAINS $w
                            OR toLower(b.name) CONTAINS $w
@@ -499,114 +484,127 @@ def natural_language_query(req: QueryRequest):
                                b.name AS object, rel.context AS context,
                                rel.domain AS domain, rel.india_impact AS india_impact,
                                rel.confidence AS confidence, rel.valid_from AS date,
-                               rel.source AS source
-                        LIMIT 8
+                               rel.source AS source, 'KB' AS edge_source
+                        LIMIT 10
                     """, w=word)
-                    fallback_edges.extend([dict(row) for row in r])
-                # deduplicate
-                seen = set()
-                unique_fallback = []
-                for e in fallback_edges:
-                    key = f"{e.get('subject')}_{e.get('relation')}_{e.get('object')}"
-                    if key not in seen:
-                        seen.add(key)
-                        unique_fallback.append(e)
-                all_edges = unique_fallback[:20]
-                live_edges = all_edges
-                log.info(f"  Fallback keyword search found {len(all_edges)} edges")
+                    for row in r:
+                        d = dict(row)
+                        k = f"{d['subject']}_{d['relation']}_{d['object']}"
+                        if k not in seen_keys:
+                            seen_keys.add(k)
+                            kb_edges.append(d)
+                all_edges = kb_edges[:25]
+                log.info(f"  Keyword fallback: {len(all_edges)} edges")
 
-        if not all_edges:
-            return {
-                "question": req.question,
-                "answer": (
-                    f"No graph data found for: '{req.question}'. "
-                    "The knowledge base covers India's strategic relationships with China, Pakistan, "
-                    "the US, Iran, and regional powers. The live news layer adds recent developments. "
-                    "Try: 'India and China border', 'What is CPEC?', 'Hambantota Port threat', "
-                    "'India energy dependency', 'Quad alliance India'."
-                ),
-                "kb_edges": [], "live_edges": [], "total_evidence": 0,
-                "evidence_summary": "No matching entities found",
-                "entities_matched": [], "evidence": [], "sources_used": 0,
-            }
+        graph_coverage = "RICH" if len(all_edges) >= 10 else "PARTIAL" if len(all_edges) >= 3 else "SPARSE"
 
-        # ────────────────────────────────────────────────────
-        # Build context for Groq (historical + recent)
-        # ────────────────────────────────────────────────────
-        kb_context = "\n".join([
-            f"  HISTORICAL: {e['subject']} --[{e['relation']}]--> {e['object']} | "
-            f"{e['context']} | Impact: {e['india_impact']} | Confidence: {e['confidence']} "
-            f"({e['date']}) [{e['source']}]"
-            for e in kb_edges[:15]
-        ])
+        # ── 3. Build structured context block for LLM ─────────────────────────
+        def fmt_edge(e: dict, prefix: str) -> str:
+            conf = f"{float(e.get('confidence') or 0)*100:.0f}%" if e.get('confidence') else "?"
+            impact = e.get('india_impact', '')
+            return (
+                f"  [{prefix}] {e['subject']} --[{e['relation']}]--> {e['object']} "
+                f"| {e.get('context','')} | impact={impact} conf={conf} date={e.get('date','')} "
+                f"src={e.get('source','')}"
+            )
 
-        live_context = "\n".join([
-            f"  RECENT: {e['subject']} --[{e['relation']}]--> {e['object']} | "
-            f"{e['context']} | Impact: {e['india_impact']} ({e['date']}) [{e['source']}]"
-            for e in live_edges[:10]
-        ])
+        kb_block  = "\n".join(fmt_edge(e, "KB")   for e in kb_edges[:20])
+        live_block = "\n".join(fmt_edge(e, "LIVE") for e in live_edges[:10])
 
-        full_context = ""
-        if kb_context:
-            full_context += "HISTORICAL CONTEXT (Knowledge Base):\n" + kb_context + "\n\n"
-        if live_context:
-            full_context += "RECENT DEVELOPMENTS (Live News):\n" + live_context + "\n\n"
+        graph_block = ""
+        if kb_block:
+            graph_block += "VERIFIED KNOWLEDGE BASE:\n" + kb_block + "\n\n"
+        if live_block:
+            graph_block += "LIVE NEWS FEED:\n" + live_block + "\n\n"
 
-        # ────────────────────────────────────────────────────
-        # Call Groq with combined context
-        # ────────────────────────────────────────────────────
+        # ── 4. Structured LLM prompt ──────────────────────────────────────────
+        system_prompt = """You are BharatGraph — India's premier strategic intelligence terminal.
+Your job: answer the analyst's query with maximum signal and zero noise.
+
+OUTPUT FORMAT (always return valid JSON, no markdown fences):
+{
+  "headline": "One crisp sentence — the single most important takeaway (max 15 words)",
+  "assessment": "2-3 paragraph strategic assessment. Lead with what matters most to India.",
+  "key_facts": [
+    {"claim": "...", "source": "KB|LIVE|EXPERT", "confidence": 0.0-1.0, "impact": "HIGH|MEDIUM|LOW"}
+  ],
+  "graph_gaps": "One sentence on what the graph does NOT have on this topic (or null if coverage is good)",
+  "watch_signals": ["signal1", "signal2"],
+  "data_sources": {"kb_edges": N, "live_edges": N, "coverage": "RICH|PARTIAL|SPARSE"}
+}
+
+RULES:
+- key_facts: extract 3-6 specific verifiable claims from the graph edges. If graph is sparse, supplement with your strategic knowledge but mark source as "EXPERT" and confidence <= 0.7.
+- assessment: when graph coverage is SPARSE or PARTIAL, draw on your expert geopolitical knowledge. Label those insights clearly with "(analyst assessment)" vs "(graph-verified)".
+- watch_signals: 2-3 concrete things to monitor going forward (e.g. specific ports, treaties, military movements).
+- Never refuse to answer due to sparse data — a good analyst gives their best assessment and states confidence.
+- Be crisp. Total assessment should be under 300 words."""
+
+        user_prompt = f"""Graph Coverage: {graph_coverage} ({len(kb_edges)} KB + {len(live_edges)} live edges)
+Entities matched: {entities_in_q or 'none — keyword fallback used'}
+
+{graph_block if graph_block else "No direct graph hits. Use your strategic knowledge."}
+
+ANALYST QUERY: {req.question}
+
+Respond only with the JSON object."""
+
+        # ── 5. Call LLM ───────────────────────────────────────────────────────
         client = Groq(api_key=GROQ_API_KEY)
-        response = client.chat.completions.create(
+        llm_resp = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are BharatGraph, India's strategic intelligence analyst. "
-                        "You have a knowledge graph of verified facts and live news. "
-                        "Rules: "
-                        "1. Use ONLY the graph evidence provided — never hallucinate facts. "
-                        "2. Give a direct strategic assessment — lead with what matters to India. "
-                        "3. Cite specific edges: 'China --[controls_port]--> Hambantota Port (0.95 confidence)'. "
-                        "4. If the question is about a person/event NOT in the graph, say so in ONE sentence "
-                        "   then pivot to the closest relevant graph context (e.g. 'Trump' → US-India relations). "
-                        "5. Never write more than 250 words. Be crisp and analytical, not verbose."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Knowledge Graph Data:\n"
-                        f"{full_context}\n\n"
-                        f"Question: {req.question}\n\n"
-                        f"Provide a comprehensive answer using both historical facts and recent news."
-                    )
-                }
+                {"role": "system", "content": system_prompt},
+                {"role": "user",   "content": user_prompt},
             ],
-            temperature=0.3,
-            max_tokens=600,
+            temperature=0.25,
+            max_tokens=900,
         )
 
-        answer = response.choices[0].message.content.strip()
+        raw = llm_resp.choices[0].message.content.strip()
+        # strip markdown fences if model wraps anyway
+        raw = raw.strip("```json").strip("```").strip()
 
-        log.info(f"Query answered: {len(kb_edges)} KB + {len(live_edges)} live edges")
+        # ── 6. Parse + enrich ─────────────────────────────────────────────────
+        try:
+            structured = json.loads(raw)
+        except Exception:
+            # graceful fallback — wrap raw text so frontend always gets structure
+            structured = {
+                "headline": req.question[:80],
+                "assessment": raw,
+                "key_facts": [],
+                "graph_gaps": None,
+                "watch_signals": [],
+                "data_sources": {"kb_edges": len(kb_edges), "live_edges": len(live_edges), "coverage": graph_coverage},
+            }
 
-        # ────────────────────────────────────────────────────
-        # Return comprehensive response with evidence breakdown
-        # ────────────────────────────────────────────────────
+        structured["data_sources"] = {
+            "kb_edges":   len(kb_edges),
+            "live_edges": len(live_edges),
+            "coverage":   graph_coverage,
+        }
+
+        log.info(f"Query answered | coverage={graph_coverage} | kb={len(kb_edges)} live={len(live_edges)}")
+
         return {
-            "question": req.question,
-            "answer": answer,
-            "kb_edges": kb_edges,
-            "live_edges": live_edges,
-            "total_evidence": len(kb_edges) + len(live_edges),
-            "evidence_summary": (
-                f"{len(kb_edges)} historical facts + {len(live_edges)} recent developments"
-            ),
+            # ── structured fields (new) ──────────────────────────────
+            "headline":      structured.get("headline", ""),
+            "assessment":    structured.get("assessment", ""),
+            "key_facts":     structured.get("key_facts", []),
+            "graph_gaps":    structured.get("graph_gaps"),
+            "watch_signals": structured.get("watch_signals", []),
+            "data_sources":  structured.get("data_sources", {}),
+            # ── backward-compat flat answer ──────────────────────────
+            "answer":        structured.get("assessment", raw),
+            "question":      req.question,
+            "kb_edges":      kb_edges,
+            "live_edges":    live_edges,
+            "total_evidence": len(all_edges),
+            "evidence_summary": f"{len(kb_edges)} KB + {len(live_edges)} live ({graph_coverage} coverage)",
             "entities_matched": entities_in_q,
-            # Backward compatibility with old response format
-            "evidence": kb_edges + live_edges,
-            "sources_used": len(kb_edges) + len(live_edges),
+            "evidence":      all_edges,
+            "sources_used":  len(all_edges),
         }
 
     except Exception as e:
@@ -682,7 +680,7 @@ def whatif(req: WhatIfRequest):
                 RETURN count(r) AS n
             """).single()["n"]
 
-        driver.close()
+     
 
         # ── Domain breakdown ──────────────────────────────────
         domain_breakdown = {}
@@ -897,7 +895,7 @@ def get_alerts():
                     "watch_for":    "Dam construction upstream of Brahmaputra or Indus tributaries",
                 })
 
-        driver.close()
+        
 
         result = {"total_alerts": len(alerts), "alerts": alerts}
         set_cached("alerts", result, ttl=30)   # 30s — faster refresh than other endpoints
@@ -962,7 +960,7 @@ def get_node_detail(node_id: str):
             """, name=node_id)
             incoming = [dict(r) for r in result]
 
-        driver.close()
+       
         log.info(f"Node detail: {node_id}")
 
         return {

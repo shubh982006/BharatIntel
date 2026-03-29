@@ -1,6 +1,7 @@
 """
 BharatGraph - Neo4j Writer
 Fixed for Neo4j 5.x — ON CREATE SET must come before SET in MERGE statements.
+Singleton driver — no driver.close() calls anywhere.
 """
 
 import os
@@ -9,13 +10,24 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-NEO4J_URI      = os.environ.get("NEO4J_URI",      "bolt://localhost:7687")
-NEO4J_USER     = os.environ.get("NEO4J_USER",     "neo4j")
-NEO4J_PASSWORD = os.environ.get("NEO4J_PASSWORD", "bharatgraph")
-
+# ─────────────────────────────────────────────
+# SINGLETON DRIVER — one connection for process lifetime
+# Never call driver.close() — Aura/TLS connections are expensive to reopen
+# ─────────────────────────────────────────────
+_driver = None
 
 def get_driver():
-    return GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+    global _driver
+    if _driver is None:
+        _driver = GraphDatabase.driver(
+            os.getenv("NEO4J_URI", "bolt://localhost:7687"),
+            auth=(
+                os.getenv("NEO4J_USER", "neo4j"),
+                os.getenv("NEO4J_PASSWORD", "bharatgraph"),
+            ),
+            max_connection_pool_size=10,
+        )
+    return _driver
 
 
 def push_to_neo4j(extracted_articles):
@@ -116,7 +128,6 @@ def push_to_neo4j(extracted_articles):
                      conflict_flag=conflict_flag)
                 edge_count += 1
 
-    driver.close()
     print(f"  [neo4j] Pushed {node_count} nodes, {edge_count} edges")
     return {"nodes": node_count, "edges": edge_count}
 
@@ -126,13 +137,12 @@ def test_connection():
         driver = get_driver()
         with driver.session() as session:
             session.run("RETURN 1 AS ok").single()
-        driver.close()
-        print(f"  [neo4j] Connected to {NEO4J_URI}")
+        uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+        print(f"  [neo4j] Connected to {uri}")
         return True
     except Exception as e:
         print(f"  [neo4j] Connection failed: {e}")
-        print(f"  Make sure Neo4j Desktop is running on {NEO4J_URI}")
-        print(f"  Set NEO4J_PASSWORD env var to your Neo4j password")
+        print("  Set NEO4J_URI / NEO4J_USER / NEO4J_PASSWORD env vars")
         return False
 
 
@@ -177,7 +187,6 @@ def get_graph_snapshot():
         for record in result:
             links.append(dict(record))
 
-    driver.close()
     return {
         "nodes":       nodes,
         "links":       links,
@@ -212,5 +221,4 @@ def get_timeline(node1, node2, from_date=None, to_date=None):
         for record in result:
             edges.append(dict(record))
 
-    driver.close()
     return edges

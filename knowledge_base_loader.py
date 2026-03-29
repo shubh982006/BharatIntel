@@ -9,8 +9,8 @@ No API calls needed — pure data loading.
 
 import csv
 import os
-from neo4j import GraphDatabase
 from dotenv import load_dotenv
+from neo4j_writer import get_driver
 
 load_dotenv()
 
@@ -20,9 +20,6 @@ NEO4J_PASSWORD = os.environ.get("NEO4J_PASSWORD", "bharatgraph")
 
 KB_FILE = "bharatgraph_knowledge_base.csv"
 
-
-def get_driver():
-    return GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
 
 
 def load_knowledge_base():
@@ -120,7 +117,6 @@ def load_knowledge_base():
             if (i + 1) % 20 == 0:
                 print(f"  [{i+1}/{len(rows)}] edges loaded...")
 
-    driver.close()
 
     print(f"\n[done] Knowledge base loaded")
     print(f"  Nodes created/updated: ~{node_count}")
@@ -146,7 +142,6 @@ def count_kb_edges():
                 RETURN count(r) AS n
             """)
             count = result.single()["n"]
-        driver.close()
         return count
     except Exception as e:
         print(f"[error] Could not count KB edges: {e}")
@@ -204,7 +199,7 @@ def test_kb_queries():
             except Exception as e:
                 print(f"  [error] {e}")
 
-    driver.close()
+    
     print("\n" + "=" * 70 + "\n")
 
 
